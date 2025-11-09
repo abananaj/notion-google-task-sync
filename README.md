@@ -1,6 +1,12 @@
-# Google Tasks → Notion Sync
+# Google Tasks ↔️ Notion Sync
 
-One-way sync from Google Tasks to Notion. Runs every 15 minutes.
+**Bidirectional sync** between Google Tasks and Notion. Runs every 15 minutes.
+
+## How It Works
+
+- Compares timestamps (`googleTask.updated` vs `notionTask.last_edited_time`)
+- **Most recent change wins** - syncs in the appropriate direction
+- Changes on either platform are reflected on the other
 
 ## Quick Start
 
@@ -30,9 +36,21 @@ One-way sync from Google Tasks to Notion. Runs every 15 minutes.
 
 4. **Run**
    ```bash
-   npm run sync      # One-time sync (first run opens browser for auth)
+   npm run sync      # One-time bidirectional sync
    npm run schedule  # Auto-sync every 15 min
    ```
+
+## Sync Behavior
+
+- **Google task updated** → Changes pushed to Notion
+- **Notion task updated** → Changes pushed to Google Tasks
+- **Both updated** → Most recent timestamp wins
+- **Already synced** → Skipped (no unnecessary API calls)
+
+Supported changes:
+- Task title
+- Status (Not started ↔ needsAction, Done ↔ completed)
+- Due date
 
 ## That's it
 

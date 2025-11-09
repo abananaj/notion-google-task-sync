@@ -1,9 +1,9 @@
-import { getAllTasks } from './googleTasksService.js';
+import { getAllTasks, updateTaskFromNotion } from './googleTasksService.js';
 import { getAllNotionTasks, createNotionTask, updateNotionTask } from './notionService.js';
 import 'dotenv/config';
 
-async function syncGoogleTasksToNotion() {
-  console.log('Starting sync...');
+async function bidirectionalSync() {
+  console.log('Starting bidirectional sync...');
 
   const googleTasks = await getAllTasks();
   console.log(`Found ${googleTasks.length} Google Tasks`);
@@ -20,23 +20,43 @@ async function syncGoogleTasksToNotion() {
     }
   });
 
-  // Sync each Google task to Notion
+  // Sync each Google task
   for (const googleTask of googleTasks) {
-    const taskData = {
-      title: googleTask.title,
-      status: googleTask.status === 'completed' ? 'Done' : 'Not started',
-      due: googleTask.due,
-      googleTaskId: googleTask.id,
-    };
-
     const existingNotionTask = notionTasksMap.get(googleTask.id);
 
-    if (existingNotionTask) {
-      await updateNotionTask(existingNotionTask.id, taskData);
-      console.log(`✓ ${googleTask.title}`);
-    } else {
+    if (!existingNotionTask) {
+      // New Google task → Create in Notion
+      const taskData = {
+        title: googleTask.title,
+        status: googleTask.status === 'completed' ? 'Done' : 'Not started',
+        due: googleTask.due,
+        googleTaskId: googleTask.id,
+      };
       await createNotionTask(taskData);
-      console.log(`+ ${googleTask.title}`);
+      console.log(`+ Created in Notion: ${googleTask.title}`);
+    } else {
+      // Compare timestamps to determine sync direction
+      const googleUpdated = new Date(googleTask.updated);
+      const notionUpdated = new Date(existingNotionTask.last_edited_time);
+
+      if (googleUpdated > notionUpdated) {
+        // Google is newer → Update Notion
+        const taskData = {
+          title: googleTask.title,
+          status: googleTask.status === 'completed' ? 'Done' : 'Not started',
+          due: googleTask.due,
+          googleTaskId: googleTask.id,
+        };
+        await updateNotionTask(existingNotionTask.id, taskData);
+        console.log(`→ Google → Notion: ${googleTask.title}`);
+      } else if (notionUpdated > googleUpdated) {
+        // Notion is newer → Update Google
+        await updateTaskFromNotion(googleTask.taskListId, googleTask.id, existingNotionTask);
+        console.log(`← Notion → Google: ${googleTask.title}`);
+      } else {
+        // Same timestamp - already synced
+        console.log(`= ${googleTask.title}`);
+      }
     }
 
     await new Promise(r => setTimeout(r, 350)); // Rate limiting
@@ -46,9 +66,9 @@ async function syncGoogleTasksToNotion() {
 }
 
 // Run sync if executed directly
-syncGoogleTasksToNotion().catch(err => {
+bidirectionalSync().catch(err => {
   console.error('❌', err.message);
   process.exit(1);
 });
 
-export { syncGoogleTasksToNotion };
+export { bidirectionalSync };

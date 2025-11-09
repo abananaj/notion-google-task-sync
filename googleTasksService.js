@@ -53,4 +53,29 @@ async function deleteTask(taskListId, taskId) {
   });
 }
 
-export { getAllTasks, createTask, updateTask, deleteTask };
+async function updateTaskFromNotion(taskListId, taskId, notionTask) {
+  const tasksClient = await getTasksClient();
+  
+  // Map Notion status to Google status
+  const statusValue = notionTask.properties.Status?.select?.name;
+  const status = statusValue === 'Done' ? 'completed' : 'needsAction';
+  
+  const updateData = {
+    title: notionTask.properties.Title.title[0]?.plain_text || 'Untitled',
+    status: status,
+  };
+  
+  // Add due date if present
+  const dueDate = notionTask.properties['Due Date']?.date?.start;
+  if (dueDate) {
+    updateData.due = dueDate;
+  }
+  
+  return await tasksClient.tasks.patch({
+    tasklist: taskListId,
+    task: taskId,
+    requestBody: updateData,
+  });
+}
+
+export { getAllTasks, createTask, updateTask, deleteTask, updateTaskFromNotion };
