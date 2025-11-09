@@ -1,4 +1,4 @@
-import { getAllTasks, updateTaskFromNotion } from './googleTasksService.js';
+import { getAllTasks, updateTaskFromNotion, createTaskFromNotion } from './googleTasksService.js';
 import { getAllNotionTasks, createNotionTask, updateNotionTask } from './notionService.js';
 import 'dotenv/config';
 
@@ -13,10 +13,14 @@ async function bidirectionalSync() {
 
   // Map existing Notion tasks by Google Task ID
   const notionTasksMap = new Map();
+  const notionTasksWithoutGoogleId = [];
+
   notionTasks.forEach(task => {
     const googleTaskId = task.properties['Google Task ID']?.rich_text[0]?.text?.content;
     if (googleTaskId) {
       notionTasksMap.set(googleTaskId, task);
+    } else {
+      notionTasksWithoutGoogleId.push(task);
     }
   });
 
@@ -59,6 +63,22 @@ async function bidirectionalSync() {
       }
     }
 
+    await new Promise(r => setTimeout(r, 350)); // Rate limiting
+  }
+
+  // Handle Notion tasks without Google Task ID (create in Google, then update Notion)
+  for (const notionTask of notionTasksWithoutGoogleId) {
+    const title = notionTask.properties.Title.title[0]?.plain_text || 'Untitled';
+    console.log(`+ Creating in Google: ${title}`);
+
+    const newGoogleTask = await createTaskFromNotion(notionTask);
+
+    // Update Notion task with the new Google Task ID
+    await updateNotionTask(notionTask.id, {
+      googleTaskId: newGoogleTask.id,
+    });
+
+    console.log(`  ✓ Linked: ${title} → Google Task ID: ${newGoogleTask.id}`);
     await new Promise(r => setTimeout(r, 350)); // Rate limiting
   }
 

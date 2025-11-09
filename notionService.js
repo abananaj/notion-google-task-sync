@@ -34,17 +34,28 @@ async function createNotionTask(task) {
 }
 
 async function updateNotionTask(pageId, task) {
-  const properties = {
-    'Title': {
-      title: [{ text: { content: task.title || 'Untitled' } }],
-    },
-    'Status': {
-      select: { name: task.status || 'Not started' },
-    },
-  };
+  const properties = {};
 
-  if (task.due) {
-    properties['Due Date'] = { date: { start: task.due } };
+  if (task.title) {
+    properties['Title'] = {
+      title: [{ text: { content: task.title } }],
+    };
+  }
+
+  if (task.status) {
+    properties['Status'] = {
+      select: { name: task.status },
+    };
+  }
+
+  if (task.due !== undefined) {
+    properties['Due Date'] = task.due ? { date: { start: task.due } } : { date: null };
+  }
+
+  if (task.googleTaskId) {
+    properties['Google Task ID'] = {
+      rich_text: [{ text: { content: task.googleTaskId } }],
+    };
   }
 
   return await notion.pages.update({ page_id: pageId, properties });

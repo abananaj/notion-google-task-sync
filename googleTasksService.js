@@ -35,6 +35,39 @@ async function createTask(taskListId, task) {
   });
 }
 
+async function createTaskFromNotion(notionTask) {
+  const tasksClient = await getTasksClient();
+
+  // Get the first task list (default list)
+  const taskLists = await tasksClient.tasklists.list();
+  const defaultListId = taskLists.data.items[0].id;
+
+  // Map Notion status to Google status
+  const statusValue = notionTask.properties.Status?.select?.name;
+  const status = statusValue === 'Done' ? 'completed' : 'needsAction';
+
+  const taskData = {
+    title: notionTask.properties.Title.title[0]?.plain_text || 'Untitled',
+    status: status,
+  };
+
+  // Add due date if present
+  const dueDate = notionTask.properties['Due Date']?.date?.start;
+  if (dueDate) {
+    taskData.due = dueDate;
+  }
+
+  const result = await tasksClient.tasks.insert({
+    tasklist: defaultListId,
+    requestBody: taskData,
+  });
+
+  return {
+    ...result.data,
+    taskListId: defaultListId
+  };
+}
+
 async function updateTask(taskListId, taskId, task) {
   const tasksClient = await getTasksClient();
   // Use patch to update partial fields (update can require full resource)
@@ -78,4 +111,4 @@ async function updateTaskFromNotion(taskListId, taskId, notionTask) {
   });
 }
 
-export { getAllTasks, createTask, updateTask, deleteTask, updateTaskFromNotion };
+export { getAllTasks, createTask, createTaskFromNotion, updateTask, deleteTask, updateTaskFromNotion };
