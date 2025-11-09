@@ -98,11 +98,14 @@ async function updateTaskFromNotion(taskListId, taskId, notionTask) {
     status: status,
   };
 
-  // Add due date if present
+  // Handle due date - only include if present in Notion
   const dueDate = notionTask.properties['Due Date']?.date?.start;
   if (dueDate) {
-    updateData.due = dueDate;
+    // Google Tasks expects RFC 3339 timestamp, but if we get just a date (YYYY-MM-DD),
+    // convert it to RFC 3339 format
+    updateData.due = dueDate.includes('T') ? dueDate : `${dueDate}T00:00:00.000Z`;
   }
+  // Note: Google Tasks API - omit 'due' field to leave unchanged, can't explicitly clear
 
   return await tasksClient.tasks.patch({
     tasklist: taskListId,

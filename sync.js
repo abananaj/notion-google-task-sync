@@ -68,17 +68,22 @@ async function bidirectionalSync() {
 
   // Handle Notion tasks without Google Task ID (create in Google, then update Notion)
   for (const notionTask of notionTasksWithoutGoogleId) {
-    const title = notionTask.properties.Title.title[0]?.plain_text || 'Untitled';
-    console.log(`+ Creating in Google: ${title}`);
+    try {
+      const title = notionTask.properties.Title.title[0]?.plain_text || 'Untitled';
+      console.log(`+ Creating in Google: ${title}`);
 
-    const newGoogleTask = await createTaskFromNotion(notionTask);
+      const newGoogleTask = await createTaskFromNotion(notionTask);
 
-    // Update Notion task with the new Google Task ID
-    await updateNotionTask(notionTask.id, {
-      googleTaskId: newGoogleTask.id,
-    });
+      // Update Notion task with the new Google Task ID
+      await updateNotionTask(notionTask.id, {
+        googleTaskId: newGoogleTask.id,
+      });
 
-    console.log(`  ✓ Linked: ${title} → Google Task ID: ${newGoogleTask.id}`);
+      console.log(`  ✓ Linked: ${title} → Google Task ID: ${newGoogleTask.id}`);
+    } catch (error) {
+      const title = notionTask.properties.Title.title[0]?.plain_text || 'Untitled';
+      console.error(`  ✗ Failed to create: ${title} - ${error.message}`);
+    }
     await new Promise(r => setTimeout(r, 350)); // Rate limiting
   }
 

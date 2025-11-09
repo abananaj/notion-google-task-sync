@@ -48,8 +48,9 @@ async function updateNotionTask(pageId, task) {
     };
   }
 
-  if (task.due !== undefined) {
-    properties['Due Date'] = task.due ? { date: { start: task.due } } : { date: null };
+  // Only update due date if provided and not undefined
+  if (task.due) {
+    properties['Due Date'] = { date: { start: task.due } };
   }
 
   if (task.googleTaskId) {
