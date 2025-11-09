@@ -9,11 +9,13 @@ async function getTasksClient() {
 async function getAllTasks() {
   const tasksClient = await getTasksClient();
   const taskLists = await tasksClient.tasklists.list();
-  
+
   const allTasks = [];
   for (const taskList of taskLists.data.items) {
     const tasks = await tasksClient.tasks.list({
       tasklist: taskList.id,
+      showCompleted: true,
+      showHidden: true,
     });
     if (tasks.data.items) {
       allTasks.push(...tasks.data.items.map(task => ({
@@ -35,7 +37,8 @@ async function createTask(taskListId, task) {
 
 async function updateTask(taskListId, taskId, task) {
   const tasksClient = await getTasksClient();
-  return await tasksClient.tasks.update({
+  // Use patch to update partial fields (update can require full resource)
+  return await tasksClient.tasks.patch({
     tasklist: taskListId,
     task: taskId,
     requestBody: task,

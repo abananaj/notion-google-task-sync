@@ -1,6 +1,10 @@
 const { Client } = require('@notionhq/client');
 require('dotenv').config();
 
+if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
+  throw new Error('Missing NOTION_API_KEY or NOTION_DATABASE_ID in .env');
+}
+
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const databaseId = process.env.NOTION_DATABASE_ID;
 
@@ -19,11 +23,9 @@ async function createNotionTask(task) {
         title: [{ text: { content: task.title || 'Untitled' } }],
       },
       'Status': {
-        select: { name: task.status || 'To Do' },
+        select: { name: task.status || 'Not started' },
       },
-      'Due Date': task.due ? {
-        date: { start: task.due },
-      } : undefined,
+      'Due Date': task.due ? { date: { start: task.due } } : undefined,
       'Google Task ID': {
         rich_text: [{ text: { content: task.googleTaskId || '' } }],
       },
@@ -36,20 +38,16 @@ async function updateNotionTask(pageId, task) {
     'Title': {
       title: [{ text: { content: task.title || 'Untitled' } }],
     },
+    'Status': {
+      select: { name: task.status || 'Not started' },
+    },
   };
-
-  if (task.status) {
-    properties['Status'] = { select: { name: task.status } };
-  }
 
   if (task.due) {
     properties['Due Date'] = { date: { start: task.due } };
   }
 
-  return await notion.pages.update({
-    page_id: pageId,
-    properties,
-  });
+  return await notion.pages.update({ page_id: pageId, properties });
 }
 
 async function deleteNotionTask(pageId) {
