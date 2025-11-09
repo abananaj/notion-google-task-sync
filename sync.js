@@ -45,9 +45,19 @@ async function bidirectionalSync() {
 
       if (googleUpdated > notionUpdated) {
         // Google is newer → Update Notion
+        // Map Google status to Notion, preserving "In progress" when Google is needsAction
+        const currentNotionStatus = existingNotionTask.properties.Status?.status?.name;
+        let newNotionStatus;
+        if (googleTask.status === 'completed') {
+          newNotionStatus = 'Done';
+        } else {
+          // Google needsAction: preserve "In progress" if already set, otherwise use "Not started"
+          newNotionStatus = currentNotionStatus === 'In progress' ? 'In progress' : 'Not started';
+        }
+
         const taskData = {
           title: googleTask.title,
-          status: googleTask.status === 'completed' ? 'Done' : 'Not started',
+          status: newNotionStatus,
           due: googleTask.due,
           googleTaskId: googleTask.id,
         };

@@ -90,6 +90,8 @@ async function updateTaskFromNotion(taskListId, taskId, notionTask) {
   const tasksClient = await getTasksClient();
 
   // Map Notion status to Google status
+  // Notion: "Done" → Google: "completed"
+  // Notion: "Not started" or "In progress" → Google: "needsAction"
   const statusValue = notionTask.properties.Status?.status?.name;
   const status = statusValue === 'Done' ? 'completed' : 'needsAction';
 
