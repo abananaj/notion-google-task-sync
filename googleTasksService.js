@@ -6,6 +6,12 @@ async function getTasksClient() {
   return google.tasks({ version: 'v1', auth });
 }
 
+async function getAllTaskLists() {
+  const tasksClient = await getTasksClient();
+  const response = await tasksClient.tasklists.list();
+  return response.data.items || [];
+}
+
 async function getAllTasks() {
   const tasksClient = await getTasksClient();
   const taskLists = await tasksClient.tasklists.list();
@@ -21,6 +27,7 @@ async function getAllTasks() {
       allTasks.push(...tasks.data.items.map(task => ({
         ...task,
         taskListId: taskList.id,
+        taskListName: taskList.title, // Add task list name
       })));
     }
   }
@@ -38,12 +45,22 @@ async function createTask(taskListId, task) {
 async function createTaskFromNotion(notionTask) {
   const tasksClient = await getTasksClient();
 
-  // Get the first task list (default list)
+  // Get task list from Notion or use default
   const taskLists = await tasksClient.tasklists.list();
-  const defaultListId = taskLists.data.items[0].id;
+  const notionTaskListName = notionTask.properties['Task list']?.select?.name;
+
+  let targetListId;
+  if (notionTaskListName) {
+    // Find matching task list by name
+    const matchingList = taskLists.data.items.find(list => list.title === notionTaskListName);
+    targetListId = matchingList ? matchingList.id : taskLists.data.items[0].id;
+  } else {
+    // Use default (first) list
+    targetListId = taskLists.data.items[0].id;
+  }
 
   // Map Notion status to Google status
-  const statusValue = notionTask.properties.Status?.select?.name;
+  const statusValue = notionTask.properties.Status?.status?.name;
   const status = statusValue === 'Done' ? 'completed' : 'needsAction';
 
   const taskData = {
@@ -54,17 +71,17 @@ async function createTaskFromNotion(notionTask) {
   // Add due date if present
   const dueDate = notionTask.properties['Due Date']?.date?.start;
   if (dueDate) {
-    taskData.due = dueDate;
+    taskData.due = dueDate.includes('T') ? dueDate : `${dueDate}T00:00:00.000Z`;
   }
 
   const result = await tasksClient.tasks.insert({
-    tasklist: defaultListId,
+    tasklist: targetListId,
     requestBody: taskData,
   });
 
   return {
     ...result.data,
-    taskListId: defaultListId
+    taskListId: targetListId
   };
 }
 
@@ -86,7 +103,7 @@ async function deleteTask(taskListId, taskId) {
   });
 }
 
-async function updateTaskFromNotion(taskListId, taskId, notionTask) {
+async function updateTaskFromNotion(currentTaskListId, taskId, notionTask) {
   const tasksClient = await getTasksClient();
 
   // Map Notion status to Google status
@@ -109,11 +126,35 @@ async function updateTaskFromNotion(taskListId, taskId, notionTask) {
   }
   // Note: Google Tasks API - omit 'due' field to leave unchanged, can't explicitly clear
 
+  // Check if task list changed - if so, need to delete and recreate in new list
+  const notionTaskListName = notionTask.properties['Task list']?.select?.name;
+
+  if (notionTaskListName) {
+    const taskLists = await tasksClient.tasklists.list();
+    const matchingList = taskLists.data.items.find(list => list.title === notionTaskListName);
+
+    if (matchingList && matchingList.id !== currentTaskListId) {
+      // Moving to different list: delete from old list and create in new list
+      await tasksClient.tasks.delete({
+        tasklist: currentTaskListId,
+        task: taskId,
+      });
+
+      const newTask = await tasksClient.tasks.insert({
+        tasklist: matchingList.id,
+        requestBody: updateData,
+      });
+
+      return newTask;
+    }
+  }
+
+  // Update in current list
   return await tasksClient.tasks.patch({
-    tasklist: taskListId,
+    tasklist: currentTaskListId,
     task: taskId,
     requestBody: updateData,
   });
 }
 
-export { getAllTasks, createTask, createTaskFromNotion, updateTask, deleteTask, updateTaskFromNotion };
+export { getAllTasks, getAllTaskLists, createTask, createTaskFromNotion, updateTask, deleteTask, updateTaskFromNotion };

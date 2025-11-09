@@ -34,6 +34,7 @@ async function bidirectionalSync() {
         title: googleTask.title,
         status: googleTask.status === 'completed' ? 'Done' : 'Not started',
         due: googleTask.due,
+        taskList: googleTask.taskListName,
         googleTaskId: googleTask.id,
       };
       await createNotionTask(taskData);
@@ -58,6 +59,8 @@ async function bidirectionalSync() {
         const taskData = {
           title: googleTask.title,
           status: newNotionStatus,
+          due: googleTask.due,
+          taskList: googleTask.taskListName,
           due: googleTask.due,
           googleTaskId: googleTask.id,
         };

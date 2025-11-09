@@ -16,20 +16,29 @@ async function getAllNotionTasks() {
 }
 
 async function createNotionTask(task) {
+  const properties = {
+    'Title': {
+      title: [{ text: { content: task.title || 'Untitled' } }],
+    },
+    'Status': {
+      status: { name: task.status || 'Not started' },
+    },
+    'Google Task ID': {
+      rich_text: [{ text: { content: task.googleTaskId || '' } }],
+    },
+  };
+
+  if (task.due) {
+    properties['Due Date'] = { date: { start: task.due } };
+  }
+
+  if (task.taskList) {
+    properties['Task list'] = { select: { name: task.taskList } };
+  }
+
   return await notion.pages.create({
     parent: { database_id: databaseId },
-    properties: {
-      'Title': {
-        title: [{ text: { content: task.title || 'Untitled' } }],
-      },
-      'Status': {
-        status: { name: task.status || 'Not started' },
-      },
-      'Due Date': task.due ? { date: { start: task.due } } : undefined,
-      'Google Task ID': {
-        rich_text: [{ text: { content: task.googleTaskId || '' } }],
-      },
-    },
+    properties,
   });
 }
 
@@ -51,6 +60,10 @@ async function updateNotionTask(pageId, task) {
   // Only update due date if provided and not undefined
   if (task.due) {
     properties['Due Date'] = { date: { start: task.due } };
+  }
+
+  if (task.taskList) {
+    properties['Task list'] = { select: { name: task.taskList } };
   }
 
   if (task.googleTaskId) {
