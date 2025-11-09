@@ -53,14 +53,6 @@ async function createTask(taskListId, task) {
   });
 }
 
-async function createTask(taskListId, task) {
-  const tasksClient = await getTasksClient();
-  return await tasksClient.tasks.insert({
-    tasklist: taskListId,
-    requestBody: task,
-  });
-}
-
 async function createTaskFromNotion(notionTask) {
   const tasksClient = await getTasksClient();
 
