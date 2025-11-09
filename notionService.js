@@ -23,7 +23,7 @@ async function createNotionTask(task) {
         title: [{ text: { content: task.title || 'Untitled' } }],
       },
       'Status': {
-        select: { name: task.status || 'Not started' },
+        status: { name: task.status || 'Not started' },
       },
       'Due Date': task.due ? { date: { start: task.due } } : undefined,
       'Google Task ID': {
@@ -44,7 +44,7 @@ async function updateNotionTask(pageId, task) {
 
   if (task.status) {
     properties['Status'] = {
-      select: { name: task.status },
+      status: { name: task.status },
     };
   }
 
