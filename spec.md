@@ -26,6 +26,7 @@ Google Tasks <--> Sync Engine <--> Notion Database
 ### 2.3 Sync Logic
 
 For each task pair (matched by Google Task ID):
+
 1. Compare `googleTask.updated` vs `notionTask.last_edited_time`
 2. If Google is newer → Update Notion
 3. If Notion is newer → Update Google
@@ -75,13 +76,16 @@ Google OAuth credentials are stored in `credentials.json` and tokens in `token.j
   taskListId: string       // Google task list ID
 }
 ```
+
     this.sourceSystem = sourceSystem;
     this.googleTaskId = googleTaskId;
     this.notionPageId = notionPageId;
     this.taskListId = taskListId;
-  }
+
 }
-```
+}
+
+````
 
 ### 4.2 Sync State Schema
 
@@ -104,23 +108,24 @@ Required properties in Notion database:
 ```javascript
 {
   'Title': { type: 'title' },
-  'Status': { 
+  'Status': {
     type: 'select',
     options: ['Not started', 'Done']  // Maps to Google needsAction/completed
   },
   'Due Date': { type: 'date' },
   'Google Task ID': { type: 'rich_text' }  // Links to Google Tasks
 }
-```
+````
 
 Built-in Notion property used for sync:
+
 - `last_edited_time` - Automatically updated by Notion when page is modified
 
 ## 5. Bidirectional Sync Implementation
 
 ### 5.1 Google Tasks Service
 
-```jsx
+````jsx
 ## 5. Bidirectional Sync Implementation
 
 ### 5.1 Sync Algorithm
@@ -129,7 +134,7 @@ Built-in Notion property used for sync:
 async function bidirectionalSync() {
   const googleTasks = await getAllTasks();
   const notionTasks = await getAllNotionTasks();
-  
+
   // Map Notion tasks by Google Task ID
   const notionMap = new Map();
   notionTasks.forEach(task => {
@@ -139,7 +144,7 @@ async function bidirectionalSync() {
 
   for (const googleTask of googleTasks) {
     const notionTask = notionMap.get(googleTask.id);
-    
+
     if (!notionTask) {
       // New Google task → Create in Notion
       await createNotionTask(googleTask);
@@ -147,7 +152,7 @@ async function bidirectionalSync() {
       // Compare timestamps
       const googleUpdated = new Date(googleTask.updated);
       const notionUpdated = new Date(notionTask.last_edited_time);
-      
+
       if (googleUpdated > notionUpdated) {
         // Google is newer → Update Notion
         await updateNotionTask(notionTask.id, googleTask);
@@ -158,7 +163,7 @@ async function bidirectionalSync() {
       // If equal, already synced - skip
     }
   }
-  
+
   // Handle Notion tasks not in Google (create new Google tasks)
   for (const notionTask of notionTasks) {
     const googleTaskId = notionTask.properties['Google Task ID']?.rich_text[0]?.text?.content;
@@ -167,11 +172,12 @@ async function bidirectionalSync() {
     }
   }
 }
-```
+````
 
 ### 5.2 Status Mapping
 
 Google Tasks ↔ Notion:
+
 - `needsAction` ↔ `Not started`
 - `completed` ↔ `Done`
 
@@ -191,6 +197,8 @@ Google Tasks ↔ Notion:
 ```bash
 npm run sync      # One-time bidirectional sync
 npm run schedule  # Run sync every 15 minutes
+```
+
 ```
 
 ```

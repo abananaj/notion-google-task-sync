@@ -48,6 +48,7 @@
 - **Already synced** → Skipped (no unnecessary API calls)
 
 Supported changes:
+
 - Task title
 - Status (Not started ↔ needsAction, Done ↔ completed)
 - Due date
