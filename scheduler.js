@@ -1,5 +1,5 @@
-const cron = require('node-cron');
-const { syncGoogleTasksToNotion } = require('./sync');
+import cron from 'node-cron';
+import { syncGoogleTasksToNotion } from './sync.js';
 
 // Run sync every 15 minutes
 cron.schedule('*/15 * * * *', () => {

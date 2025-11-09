@@ -1,6 +1,6 @@
-const { getAllTasks } = require('./googleTasksService');
-const { getAllNotionTasks, createNotionTask, updateNotionTask } = require('./notionService');
-require('dotenv').config();
+import { getAllTasks } from './googleTasksService.js';
+import { getAllNotionTasks, createNotionTask, updateNotionTask } from './notionService.js';
+import 'dotenv/config';
 
 async function syncGoogleTasksToNotion() {
   console.log('Starting sync...');
@@ -46,11 +46,9 @@ async function syncGoogleTasksToNotion() {
 }
 
 // Run sync if executed directly
-if (require.main === module) {
-  syncGoogleTasksToNotion().catch(err => {
-    console.error('❌', err.message);
-    process.exit(1);
-  });
-}
+syncGoogleTasksToNotion().catch(err => {
+  console.error('❌', err.message);
+  process.exit(1);
+});
 
-module.exports = { syncGoogleTasksToNotion };
+export { syncGoogleTasksToNotion };

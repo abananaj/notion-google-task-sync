@@ -1,9 +1,9 @@
-const fs = require('fs').promises;
-const path = require('path');
-const { google } = require('googleapis');
-const http = require('http');
-const url = require('url');
-const open = require('open');
+import fs from 'fs/promises';
+import path from 'path';
+import { google } from 'googleapis';
+import http from 'http';
+import { URL } from 'url';
+import open from 'open';
 
 const SCOPES = ['https://www.googleapis.com/auth/tasks'];
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
@@ -44,7 +44,7 @@ function getCodeFromCallback() {
     const server = http.createServer(async (req, res) => {
       try {
         if (req.url.indexOf('/oauth2callback') > -1) {
-          const qs = new url.URL(req.url, 'http://localhost:3000').searchParams;
+          const qs = new URL(req.url, 'http://localhost:3000').searchParams;
           const code = qs.get('code');
           res.end('✅ Success! Close this window and return to terminal.');
           server.close();
@@ -113,4 +113,4 @@ async function authorize() {
   return oauth2Client;
 }
 
-module.exports = { authorize };
+export { authorize };

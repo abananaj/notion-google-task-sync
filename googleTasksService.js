@@ -1,5 +1,5 @@
-const { google } = require('googleapis');
-const { authorize } = require('./googleAuth');
+import { google } from 'googleapis';
+import { authorize } from './googleAuth.js';
 
 async function getTasksClient() {
   const auth = await authorize();
@@ -53,9 +53,4 @@ async function deleteTask(taskListId, taskId) {
   });
 }
 
-module.exports = {
-  getAllTasks,
-  createTask,
-  updateTask,
-  deleteTask,
-};
+export { getAllTasks, createTask, updateTask, deleteTask };

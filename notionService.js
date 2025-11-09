@@ -1,5 +1,5 @@
-const { Client } = require('@notionhq/client');
-require('dotenv').config();
+import { Client } from '@notionhq/client';
+import 'dotenv/config';
 
 if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
   throw new Error('Missing NOTION_API_KEY or NOTION_DATABASE_ID in .env');
@@ -57,9 +57,4 @@ async function deleteNotionTask(pageId) {
   });
 }
 
-module.exports = {
-  getAllNotionTasks,
-  createNotionTask,
-  updateNotionTask,
-  deleteNotionTask,
-};
+export { getAllNotionTasks, createNotionTask, updateNotionTask, deleteNotionTask };
