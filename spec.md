@@ -202,3 +202,5 @@ npm run schedule  # Run sync every 15 minutes
 ```
 
 ```
+## 8. Future enhancements
+- Map Google tasklist to Tasklist select properrty in the notion database
