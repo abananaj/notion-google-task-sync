@@ -61,7 +61,6 @@ async function bidirectionalSync() {
           status: newNotionStatus,
           due: googleTask.due,
           taskList: googleTask.taskListName,
-          due: googleTask.due,
           googleTaskId: googleTask.id,
         };
         await updateNotionTask(existingNotionTask.id, taskData);

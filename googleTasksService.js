@@ -6,6 +6,17 @@ async function getTasksClient() {
   return google.tasks({ version: 'v1', auth });
 }
 
+// Helper: Map Notion status to Google status
+function mapNotionStatusToGoogle(notionStatus) {
+  return notionStatus === 'Done' ? 'completed' : 'needsAction';
+}
+
+// Helper: Format date for Google Tasks API (RFC 3339)
+function formatDateForGoogle(dateString) {
+  if (!dateString) return undefined;
+  return dateString.includes('T') ? dateString : `${dateString}T00:00:00.000Z`;
+}
+
 async function getAllTaskLists() {
   const tasksClient = await getTasksClient();
   const response = await tasksClient.tasklists.list();
@@ -42,6 +53,14 @@ async function createTask(taskListId, task) {
   });
 }
 
+async function createTask(taskListId, task) {
+  const tasksClient = await getTasksClient();
+  return await tasksClient.tasks.insert({
+    tasklist: taskListId,
+    requestBody: task,
+  });
+}
+
 async function createTaskFromNotion(notionTask) {
   const tasksClient = await getTasksClient();
 
@@ -59,19 +78,15 @@ async function createTaskFromNotion(notionTask) {
     targetListId = taskLists.data.items[0].id;
   }
 
-  // Map Notion status to Google status
-  const statusValue = notionTask.properties.Status?.status?.name;
-  const status = statusValue === 'Done' ? 'completed' : 'needsAction';
-
   const taskData = {
     title: notionTask.properties.Title.title[0]?.plain_text || 'Untitled',
-    status: status,
+    status: mapNotionStatusToGoogle(notionTask.properties.Status?.status?.name),
   };
 
   // Add due date if present
   const dueDate = notionTask.properties['Due Date']?.date?.start;
   if (dueDate) {
-    taskData.due = dueDate.includes('T') ? dueDate : `${dueDate}T00:00:00.000Z`;
+    taskData.due = formatDateForGoogle(dueDate);
   }
 
   const result = await tasksClient.tasks.insert({
@@ -87,7 +102,6 @@ async function createTaskFromNotion(notionTask) {
 
 async function updateTask(taskListId, taskId, task) {
   const tasksClient = await getTasksClient();
-  // Use patch to update partial fields (update can require full resource)
   return await tasksClient.tasks.patch({
     tasklist: taskListId,
     task: taskId,
@@ -106,25 +120,16 @@ async function deleteTask(taskListId, taskId) {
 async function updateTaskFromNotion(currentTaskListId, taskId, notionTask) {
   const tasksClient = await getTasksClient();
 
-  // Map Notion status to Google status
-  // Notion: "Done" → Google: "completed"
-  // Notion: "Not started" or "In progress" → Google: "needsAction"
-  const statusValue = notionTask.properties.Status?.status?.name;
-  const status = statusValue === 'Done' ? 'completed' : 'needsAction';
-
   const updateData = {
     title: notionTask.properties.Title.title[0]?.plain_text || 'Untitled',
-    status: status,
+    status: mapNotionStatusToGoogle(notionTask.properties.Status?.status?.name),
   };
 
   // Handle due date - only include if present in Notion
   const dueDate = notionTask.properties['Due Date']?.date?.start;
   if (dueDate) {
-    // Google Tasks expects RFC 3339 timestamp, but if we get just a date (YYYY-MM-DD),
-    // convert it to RFC 3339 format
-    updateData.due = dueDate.includes('T') ? dueDate : `${dueDate}T00:00:00.000Z`;
+    updateData.due = formatDateForGoogle(dueDate);
   }
-  // Note: Google Tasks API - omit 'due' field to leave unchanged, can't explicitly clear
 
   // Check if task list changed - if so, need to delete and recreate in new list
   const notionTaskListName = notionTask.properties['Task list']?.select?.name;
