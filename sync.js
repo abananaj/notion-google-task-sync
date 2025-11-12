@@ -11,18 +11,44 @@ async function bidirectionalSync() {
   const notionTasks = await getAllNotionTasks();
   console.log(`Found ${notionTasks.length} Notion tasks`);
 
-  // Map existing Notion tasks by Google Task ID
+  // Map existing Notion tasks by Google Task ID and detect duplicates
   const notionTasksMap = new Map();
   const notionTasksWithoutGoogleId = [];
+  const duplicateTasks = [];
 
   notionTasks.forEach(task => {
     const googleTaskId = task.properties['Google Task ID']?.rich_text[0]?.text?.content;
     if (googleTaskId) {
-      notionTasksMap.set(googleTaskId, task);
+      if (notionTasksMap.has(googleTaskId)) {
+        // Duplicate found - keep the most recently edited one
+        const existing = notionTasksMap.get(googleTaskId);
+        const existingTime = new Date(existing.last_edited_time);
+        const currentTime = new Date(task.last_edited_time);
+        
+        if (currentTime > existingTime) {
+          duplicateTasks.push(existing);
+          notionTasksMap.set(googleTaskId, task);
+        } else {
+          duplicateTasks.push(task);
+        }
+      } else {
+        notionTasksMap.set(googleTaskId, task);
+      }
     } else {
       notionTasksWithoutGoogleId.push(task);
     }
   });
+
+  // Archive duplicate tasks
+  if (duplicateTasks.length > 0) {
+    console.log(`⚠️  Found ${duplicateTasks.length} duplicate task(s), archiving older versions...`);
+    for (const duplicate of duplicateTasks) {
+      const title = duplicate.properties.Title.title[0]?.plain_text || 'Untitled';
+      const googleTaskId = duplicate.properties['Google Task ID']?.rich_text[0]?.text?.content;
+      console.log(`  Archiving duplicate: ${title} (Google Task ID: ${googleTaskId})`);
+      await updateNotionTask(duplicate.id, { archived: true });
+    }
+  }
 
   // Sync each Google task
   for (const googleTask of googleTasks) {

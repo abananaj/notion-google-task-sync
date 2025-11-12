@@ -72,7 +72,14 @@ async function updateNotionTask(pageId, task) {
     };
   }
 
-  return await notion.pages.update({ page_id: pageId, properties });
+  const updateData = { page_id: pageId, properties };
+  
+  // Handle archiving separately (not a property)
+  if (task.archived !== undefined) {
+    updateData.archived = task.archived;
+  }
+
+  return await notion.pages.update(updateData);
 }
 
 async function deleteNotionTask(pageId) {
