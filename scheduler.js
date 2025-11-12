@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { bidirectionalSync } from './sync.js';
+import { bidirectionalSync } from './app.js';
 
 // ====== PRODUCTION: sync every 15 minutes
 cron.schedule('*/15 * * * *', () => {
