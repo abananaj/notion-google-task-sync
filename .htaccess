@@ -1,0 +1,34 @@
+# Apache configuration for Node.js application via cPanel Passenger
+
+# Enable Node.js Passenger
+
+PassengerEnabled On
+
+# Set the Node.js version (adjust based on your cPanel configuration)
+
+# PassengerNodejs /opt/cpanel/ea-nodejs16/bin/node
+
+# Set the application root
+
+PassengerAppRoot /home/USERNAME/notion-google-task-sync
+
+# Set the startup file
+
+PassengerStartupFile app.js
+
+# Application type
+
+PassengerAppType node
+
+# Environment (production or development)
+
+PassengerAppEnv production
+
+# Restart the app on file changes (useful during development)
+
+# PassengerRestartDir /tmp
+
+# Log level
+
+# PassengerLogLevel 3
+
