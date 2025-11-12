@@ -1,10 +1,10 @@
 {
-  "name": "notion-google-tasks-integration",
+  "name": "notion-google-task-sync",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "sync": "node --no-warnings sync.js",
+    "sync": "node --no-warnings app.js",
     "schedule": "node --no-warnings scheduler.js",
     "start": "node --no-warnings scheduler.js"
   },
