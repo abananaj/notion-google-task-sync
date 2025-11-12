@@ -1,5 +1,6 @@
 import { getAllTasks, updateTaskFromNotion, createTaskFromNotion } from './googleTasksService.js';
 import { getAllNotionTasks, createNotionTask, updateNotionTask } from './notionService.js';
+import cron from 'node-cron';
 import 'dotenv/config';
 
 async function bidirectionalSync() {
@@ -24,7 +25,7 @@ async function bidirectionalSync() {
         const existing = notionTasksMap.get(googleTaskId);
         const existingTime = new Date(existing.last_edited_time);
         const currentTime = new Date(task.last_edited_time);
-        
+
         if (currentTime > existingTime) {
           duplicateTasks.push(existing);
           notionTasksMap.set(googleTaskId, task);
@@ -128,10 +129,29 @@ async function bidirectionalSync() {
   console.log('✅ Sync complete');
 }
 
-// Run sync if executed directly
-bidirectionalSync().catch(err => {
-  console.error('❌', err.message);
-  process.exit(1);
-});
+// Check if running with --schedule flag
+const isScheduled = process.argv.includes('--schedule');
+
+if (isScheduled) {
+  // ====== PRODUCTION: sync every 15 minutes
+  cron.schedule('*/15 * * * *', () => {
+    console.log('Running scheduled sync...');
+    bidirectionalSync().catch(console.error);
+  });
+  console.log('Scheduler started. Sync will run every 15 minutes.');
+
+  // // ===== TESTING: every 30 seconds
+  // cron.schedule('*/30 * * * * *', () => {
+  //   console.log('Running scheduled sync...');
+  //   bidirectionalSync().catch(console.error);
+  // });
+  // console.log('Scheduler started. Sync will run every 30 seconds.');
+} else {
+  // Run sync immediately if executed directly without --schedule flag
+  bidirectionalSync().catch(err => {
+    console.error('❌', err.message);
+    process.exit(1);
+  });
+}
 
 export { bidirectionalSync };
