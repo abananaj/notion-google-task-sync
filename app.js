@@ -3,8 +3,14 @@ import { getAllNotionTasks, createNotionTask, updateNotionTask } from './notionS
 import cron from 'node-cron';
 import 'dotenv/config';
 
+// Environment configuration
+const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const SYNC_INTERVAL = process.env.SYNC_INTERVAL_MINUTES || 15;
+
 async function bidirectionalSync() {
-  console.log('Starting bidirectional sync...');
+  const startTime = new Date();
+  console.log(`[${startTime.toISOString()}] Starting bidirectional sync...`);
 
   const googleTasks = await getAllTasks();
   console.log(`Found ${googleTasks.length} Google Tasks`);
@@ -127,18 +133,35 @@ async function bidirectionalSync() {
   }
 
   console.log('✅ Sync complete');
+  const endTime = new Date();
+  const duration = ((endTime - startTime) / 1000).toFixed(2);
+  console.log(`[${endTime.toISOString()}] Sync completed in ${duration}s`);
 }
 
 // Check if running with --schedule flag
 const isScheduled = process.argv.includes('--schedule');
 
 if (isScheduled) {
-  // ====== PRODUCTION: sync every 15 minutes
-  cron.schedule('*/15 * * * *', () => {
-    console.log('Running scheduled sync...');
-    bidirectionalSync().catch(console.error);
+  // Production: sync at configured interval
+  const cronPattern = `*/${SYNC_INTERVAL} * * * *`;
+  cron.schedule(cronPattern, () => {
+    console.log(`[${new Date().toISOString()}] Running scheduled sync...`);
+    bidirectionalSync().catch(err => {
+      console.error(`[${new Date().toISOString()}] ❌ Sync error:`, err.message);
+    });
   });
-  console.log('Scheduler started. Sync will run every 15 minutes.');
+  console.log(`[${new Date().toISOString()}] Scheduler started (${NODE_ENV} mode). Sync will run every ${SYNC_INTERVAL} minutes.`);
+
+  // Keep process alive
+  process.on('SIGTERM', () => {
+    console.log(`[${new Date().toISOString()}] Received SIGTERM, shutting down gracefully...`);
+    process.exit(0);
+  });
+
+  process.on('SIGINT', () => {
+    console.log(`[${new Date().toISOString()}] Received SIGINT, shutting down gracefully...`);
+    process.exit(0);
+  });
 
   // // ===== TESTING: every 30 seconds
   // cron.schedule('*/30 * * * * *', () => {
@@ -149,7 +172,7 @@ if (isScheduled) {
 } else {
   // Run sync immediately if executed directly without --schedule flag
   bidirectionalSync().catch(err => {
-    console.error('❌', err.message);
+    console.error(`[${new Date().toISOString()}] ❌`, err.message);
     process.exit(1);
   });
 }

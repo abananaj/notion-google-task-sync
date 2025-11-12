@@ -1,15 +1,20 @@
 {
   "name": "notion-google-task-sync",
   "version": "1.1.0",
-  "description": "",
+  "description": "Bidirectional sync between Google Tasks and Notion",
   "main": "app.js",
   "scripts": {
     "sync": "node --no-warnings app.js",
-    "schedule": "node --no-warnings scheduler.js",
-    "start": "node --no-warnings scheduler.js"
+    "schedule": "node --no-warnings app.js --schedule",
+    "start": "node --no-warnings app.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "notion",
+    "google-tasks",
+    "sync",
+    "automation"
+  ],
+  "author": "Anna J",
   "license": "ISC",
   "type": "module",
   "dependencies": {
@@ -21,3 +26,4 @@
     "punycode": "^2.3.1"
   }
 }
+
